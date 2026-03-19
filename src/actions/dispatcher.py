@@ -3,13 +3,12 @@ Action Dispatcher — 根據 action type 分發到對應的 action 模組
 """
 
 import logging
-from . import console, line_notify, telegram, webhook, device_write
+from . import console, telegram, webhook, device_write
 
 log = logging.getLogger("dispatcher")
 
 ACTION_MAP = {
     "console": console.execute,
-    "line_notify": line_notify.execute,
     "telegram": telegram.execute,
     "webhook": webhook.execute,
     "device_write": device_write.execute,

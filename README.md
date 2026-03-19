@@ -19,7 +19,7 @@ Inspired by a production IoT platform managing 28 device plugins across 6 protoc
 - **Plugin architecture** — add a new protocol by dropping a single .py file, no core changes
 - **YAML device profiles** — define devices, fields, and data types in one config file
 - **Rule engine** — YAML-defined alert rules with cooldown, severity levels, and cross-device automation
-- **Multi-channel alerts** — LINE Notify, Telegram, Webhook, and device-to-device control
+- **Multi-channel alerts** — Telegram, Webhook, and device-to-device control
 - **Real-time dashboard** — WebSocket-powered web UI with live device data and alert history
 - **Webhook simulator** — built-in web UI to test webhook devices without external tools
 - **MCP server** — let AI agents read/write devices via natural language
@@ -76,8 +76,8 @@ REST API (FastAPI) + WebSocket + Dashboard
 ├─────────┬───────────────┤
 │ Plugins │   Actions     │
 │ ┌─────┐ │ ┌───────────┐ │
-│ │MQTT │ │ │LINE Notify│ │
-│ │Modb.│ │ │Telegram   │ │
+│ │MQTT │ │ │Telegram   │ │
+│ │Modb.│ │ │Webhook    │ │
 │ │CoAP │ │ │Webhook    │ │
 │ │WebHk│ │ │DevWrite   │ │
 │ └─────┘ │ └───────────┘ │
@@ -147,8 +147,6 @@ rules:
     severity: critical
     cooldown: 300
     actions:
-      - type: line_notify
-        message: "[ALERT] {device_name} temp {value}°C"
       - type: telegram
         message: "🔥 {device_name} temperature {value}°C"
 
@@ -222,7 +220,6 @@ kc_iot_gateway/
 │   │   ├── coap_plugin.py
 │   │   └── webhook_plugin.py
 │   └── actions/
-│       ├── line_notify.py
 │       ├── telegram.py
 │       ├── webhook.py
 │       ├── device_write.py
@@ -252,7 +249,6 @@ kc_iot_gateway/
 | `GATEWAY_PORT` | `8000` | Gateway port |
 | `MQTT_BROKER` | `localhost` | MQTT broker host |
 | `MQTT_PORT` | `1883` | MQTT broker port |
-| `LINE_NOTIFY_TOKEN` | | LINE Notify token (optional) |
 | `TELEGRAM_BOT_TOKEN` | | Telegram bot token (optional) |
 | `TELEGRAM_CHAT_ID` | | Telegram chat ID (optional) |
 

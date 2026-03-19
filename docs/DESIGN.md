@@ -1,6 +1,6 @@
 # kc_iot_gateway — Design Document
 
-> **English summary:** A lightweight, plugin-based IoT gateway that unifies device communication across multiple protocols (MQTT, Modbus TCP, CoAP, Webhook) behind a single REST API and MCP interface. Features a YAML-driven rule engine for alerting (LINE Notify, Telegram, Webhook) with cooldown and cross-device automation, a real-time web dashboard with built-in webhook simulator, device simulators for all protocols, an MCP Server for AI agent integration, and Docker Compose one-click deployment. Inspired by a production IoT platform that managed 28 device plugins across 6 protocols and 10+ brands.
+> **English summary:** A lightweight, plugin-based IoT gateway that unifies device communication across multiple protocols (MQTT, Modbus TCP, CoAP, Webhook) behind a single REST API and MCP interface. Features a YAML-driven rule engine for alerting (Telegram, Webhook) with cooldown and cross-device automation, a real-time web dashboard with built-in webhook simulator, device simulators for all protocols, an MCP Server for AI agent integration, and Docker Compose one-click deployment. Inspired by a production IoT platform that managed 28 device plugins across 6 protocols and 10+ brands.
 
 ---
 
@@ -397,8 +397,6 @@ rules:
     severity: critical
     cooldown: 300
     actions:
-      - type: line_notify
-        message: "[告警] {device_name} 溫度 {value}°C 超標"
       - type: telegram
         message: "🔥 {device_name} temperature {value}°C exceeds threshold"
 
@@ -441,8 +439,7 @@ rules:
 
 | 通道 | 實作方式 | 設定 |
 |------|---------|------|
-| LINE Notify | HTTP POST to LINE API | token 在 .env |
-| Telegram Bot | HTTP GET to Telegram Bot API | bot token + chat_id 在 .env |
+| Telegram Bot | HTTP POST to Telegram Bot API | bot token + chat_id 在 .env |
 | Webhook | HTTP POST JSON | 目標 URL 在 rules.yaml |
 | Console | stdout log | 開發用，預設啟用 |
 | device_write | 呼叫 Plugin.write() | target_device + params 在 rules.yaml |
@@ -536,7 +533,6 @@ kc_iot_gateway/
 │   │   ├── coap_plugin.py
 │   │   └── webhook_plugin.py
 │   └── actions/
-│       ├── line_notify.py
 │       ├── telegram.py
 │       ├── webhook.py
 │       ├── device_write.py
