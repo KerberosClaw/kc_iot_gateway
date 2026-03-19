@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Radio, Server, AlertTriangle, Shield, Webhook, Sun, Moon, Languages } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Radio, Server, AlertTriangle, Shield, Webhook, Sun, Moon, Languages, Monitor } from 'lucide-react';
 import { useWebSocket } from './hooks/useWebSocket';
+import { useDemoMode } from './hooks/useDemoMode';
 import { useTheme } from './hooks/useTheme';
 import { useLang } from './hooks/useLang';
 import { t } from './lib/i18n';
@@ -11,11 +12,33 @@ import { WebhookSimPanel } from './components/WebhookSimPanel';
 
 type Tab = 'devices' | 'alerts' | 'rules' | 'webhook';
 
+function useAutoDetectDemo() {
+  const [isDemo, setIsDemo] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/devices')
+      .then(r => { if (!r.ok) throw new Error(); setIsDemo(false); })
+      .catch(() => setIsDemo(true))
+      .finally(() => setChecked(true));
+  }, []);
+
+  return { isDemo, checked };
+}
+
 function App() {
   const [tab, setTab] = useState<Tab>('devices');
-  const { devices, connected, history } = useWebSocket();
   const { theme, toggle: toggleTheme } = useTheme();
   const { lang, toggle: toggleLang } = useLang();
+  const { isDemo, checked } = useAutoDetectDemo();
+
+  const ws = useWebSocket();
+  const demo = useDemoMode();
+
+  // Use demo data when API is unreachable
+  const { devices, history, connected } = isDemo ? demo : ws;
+
+  if (!checked) return null;
 
   const tabs: { id: Tab; label: string; icon: typeof Server }[] = [
     { id: 'devices', label: t('tab.devices', lang), icon: Server },
@@ -29,6 +52,17 @@ function App() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-4">
+      {/* Demo Mode Banner */}
+      {isDemo && (
+        <div
+          className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg mb-4 text-sm font-semibold"
+          style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--yellow)', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+        >
+          <Monitor size={16} />
+          {lang === 'zh' ? 'Demo Mode — 顯示模擬數據，非即時設備連線' : 'Demo Mode — Showing simulated data, not connected to live devices'}
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex items-center justify-between pb-4 mb-4" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-3">
@@ -65,7 +99,7 @@ function App() {
               color: connected ? 'var(--green)' : 'var(--red)',
             }}
           >
-            {connected ? t('connected', lang) : t('disconnected', lang)}
+            {isDemo ? 'Demo' : connected ? t('connected', lang) : t('disconnected', lang)}
           </span>
         </div>
       </header>
@@ -95,9 +129,9 @@ function App() {
 
       {/* Content */}
       {tab === 'devices' && <DevicesPanel devices={devices} history={history} lang={lang} />}
-      {tab === 'alerts' && <AlertsPanel lang={lang} />}
-      {tab === 'rules' && <RulesPanel lang={lang} />}
-      {tab === 'webhook' && <WebhookSimPanel lang={lang} />}
+      {tab === 'alerts' && <AlertsPanel lang={lang} isDemo={isDemo} />}
+      {tab === 'rules' && <RulesPanel lang={lang} isDemo={isDemo} />}
+      {tab === 'webhook' && <WebhookSimPanel lang={lang} isDemo={isDemo} />}
     </div>
   );
 }

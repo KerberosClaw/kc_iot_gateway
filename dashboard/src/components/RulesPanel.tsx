@@ -3,16 +3,31 @@ import { Shield, Plus, Pencil, Trash2, X, Check } from 'lucide-react';
 import { fetchRules, createRule, updateRule, deleteRule, toggleRule, type Rule } from '../lib/api';
 import { t, type Lang } from '../lib/i18n';
 
-export function RulesPanel({ lang }: { lang: Lang }) {
+const MOCK_RULES: Rule[] = [
+  { name: 'high_temperature', description: '廠區溫度過高', device: 'factory_temp_01', condition: { field: 'temperature', operator: '>', threshold: 35 }, severity: 'critical', cooldown: 30, actions: [{ type: 'console', message: '[CRITICAL] {device_name} temperature {value}' }], active: true, created_at: Date.now() / 1000 },
+  { name: 'plc_high_temp', description: 'PLC 溫度過高', device: 'plc_01', condition: { field: 'temperature', operator: '>', threshold: 30 }, severity: 'warning', cooldown: 30, actions: [{ type: 'console' }], active: true, created_at: Date.now() / 1000 },
+  { name: 'pump_auto_control', description: '溫度過高自動開泵', device: 'plc_01', condition: { field: 'temperature', operator: '>', threshold: 28 }, severity: 'info', cooldown: 60, actions: [{ type: 'device_write', target_device: 'plc_01', params: { pump_on: true } }, { type: 'console' }], active: true, created_at: Date.now() / 1000 },
+];
+
+export function RulesPanel({ lang, isDemo = false }: { lang: Lang; isDemo?: boolean }) {
   const [rules, setRules] = useState<Rule[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
-  const load = async () => { setRules(await fetchRules()); };
-  useEffect(() => { load(); }, []);
+  const load = async () => {
+    if (isDemo) { setRules(MOCK_RULES); return; }
+    setRules(await fetchRules());
+  };
+  useEffect(() => { load(); }, [isDemo]);
 
-  const handleToggle = async (name: string) => { await toggleRule(name); await load(); };
-  const handleDelete = async (name: string) => { await deleteRule(name); await load(); };
+  const handleToggle = async (name: string) => {
+    if (isDemo) { setRules(prev => prev.map(r => r.name === name ? { ...r, active: !r.active } : r)); return; }
+    await toggleRule(name); await load();
+  };
+  const handleDelete = async (name: string) => {
+    if (isDemo) { setRules(prev => prev.filter(r => r.name !== name)); return; }
+    await deleteRule(name); await load();
+  };
 
   return (
     <div>
@@ -23,13 +38,21 @@ export function RulesPanel({ lang }: { lang: Lang }) {
         </button>
       </div>
 
-      {creating && <RuleForm lang={lang} onSave={async (rule) => { await createRule(rule); setCreating(false); await load(); }} onCancel={() => setCreating(false)} />}
+      {creating && <RuleForm lang={lang} isDemo={isDemo} onSave={async (rule) => {
+        if (isDemo) { setRules(prev => [...prev, { ...MOCK_RULES[0], ...rule, created_at: Date.now() / 1000 } as Rule]); }
+        else { await createRule(rule); await load(); }
+        setCreating(false);
+      }} onCancel={() => setCreating(false)} />}
 
       <div className="space-y-2">
         {rules.map(rule => (
           <div key={rule.name}>
             {editing === rule.name ? (
-              <RuleForm lang={lang} initial={rule} onSave={async (updates) => { await updateRule(rule.name, updates); setEditing(null); await load(); }} onCancel={() => setEditing(null)} />
+              <RuleForm lang={lang} isDemo={isDemo} initial={rule} onSave={async (updates) => {
+                if (isDemo) { setRules(prev => prev.map(r => r.name === rule.name ? { ...r, ...updates } as Rule : r)); }
+                else { await updateRule(rule.name, updates); await load(); }
+                setEditing(null);
+              }} onCancel={() => setEditing(null)} />
             ) : (
               <div className="rounded-md p-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                 <div className="flex items-center justify-between">
@@ -72,7 +95,7 @@ function SeverityBadge({ severity }: { severity: string }) {
   return <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: c.bg, color: c.text }}>{severity}</span>;
 }
 
-function RuleForm({ lang, initial, onSave, onCancel }: { lang: Lang; initial?: Partial<Rule>; onSave: (rule: Partial<Rule>) => Promise<void>; onCancel: () => void }) {
+function RuleForm({ lang, isDemo: _isDemo, initial, onSave, onCancel }: { lang: Lang; isDemo?: boolean; initial?: Partial<Rule>; onSave: (rule: Partial<Rule>) => Promise<void>; onCancel: () => void }) {
   const [form, setForm] = useState({
     name: initial?.name || '', description: initial?.description || '', device: initial?.device || '*',
     field: initial?.condition?.field || 'temperature', operator: initial?.condition?.operator || '>',

@@ -3,7 +3,20 @@ import { Send, Radio } from 'lucide-react';
 import { fetchWebhookDevices, sendWebhook, type WebhookDevice } from '../lib/api';
 import { t, fieldLabel, type Lang } from '../lib/i18n';
 
-export function WebhookSimPanel({ lang }: { lang: Lang }) {
+const MOCK_WEBHOOK_DEVICES: WebhookDevice[] = [
+  {
+    id: 'env_sensor_01', name: '環境感測器（廠商 A）',
+    identity: { field: '$.device_id', value: 'ENV-001' },
+    fields: { temperature: { path: '$.data.temp', type: 'float', unit: '°C' }, humidity: { path: '$.data.hum', type: 'float', unit: '%RH' }, battery: { path: '$.data.bat', type: 'int', unit: '%' } },
+  },
+  {
+    id: 'door_sensor_01', name: '門禁感測器（廠商 B）',
+    identity: { field: '$.sn', value: 'DOOR-2F-01' },
+    fields: { status: { path: '$.event.type', type: 'string' } },
+  },
+];
+
+export function WebhookSimPanel({ lang, isDemo = false }: { lang: Lang; isDemo?: boolean }) {
   const [devices, setDevices] = useState<WebhookDevice[]>([]);
   const [selected, setSelected] = useState<string>('');
   const [values, setValues] = useState<Record<string, string>>({});
@@ -11,11 +24,17 @@ export function WebhookSimPanel({ lang }: { lang: Lang }) {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
+    if (isDemo) {
+      setDevices(MOCK_WEBHOOK_DEVICES);
+      setSelected(MOCK_WEBHOOK_DEVICES[0].id);
+      initValues(MOCK_WEBHOOK_DEVICES[0]);
+      return;
+    }
     fetchWebhookDevices().then(devs => {
       setDevices(devs);
       if (devs.length) { setSelected(devs[0].id); initValues(devs[0]); }
     });
-  }, []);
+  }, [isDemo]);
 
   const initValues = (dev: WebhookDevice) => {
     const vals: Record<string, string> = {};
@@ -58,10 +77,14 @@ export function WebhookSimPanel({ lang }: { lang: Lang }) {
       target[dataPath[dataPath.length - 1]] = val;
     }
 
-    try {
-      const resp = await sendWebhook(payload);
-      setResult(`Sent:\n${JSON.stringify(payload, null, 2)}\n\nResponse:\n${JSON.stringify(resp, null, 2)}`);
-    } catch (e) { setResult(`Error: ${e}`); }
+    if (isDemo) {
+      setResult(`Sent:\n${JSON.stringify(payload, null, 2)}\n\nResponse:\n${JSON.stringify({ status: 'ok', device: dev.id, received: Object.fromEntries(Object.entries(dev.fields).map(([k]) => [k, (payload as Record<string, unknown>)[k] || values[k]])) }, null, 2)}`);
+    } else {
+      try {
+        const resp = await sendWebhook(payload);
+        setResult(`Sent:\n${JSON.stringify(payload, null, 2)}\n\nResponse:\n${JSON.stringify(resp, null, 2)}`);
+      } catch (e) { setResult(`Error: ${e}`); }
+    }
     setSending(false);
   };
 

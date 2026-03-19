@@ -9,14 +9,34 @@ const SEVERITY_CONFIG: Record<string, { border: string; icon: typeof AlertTriang
   info: { border: 'var(--blue)', icon: Info, color: 'var(--blue)' },
 };
 
-export function AlertsPanel({ lang }: { lang: Lang }) {
+const MOCK_ALERTS: Alert[] = [
+  { id: 1, rule_name: 'high_temperature', device_id: 'factory_temp_01', severity: 'critical', message: 'high_temperature: temperature=36.2', value: '36.2', created_at: Date.now() / 1000 - 120 },
+  { id: 2, rule_name: 'pump_auto_control', device_id: 'plc_01', severity: 'info', message: 'pump_auto_control: temperature=29.1', value: '29.1', created_at: Date.now() / 1000 - 300 },
+  { id: 3, rule_name: 'plc_high_temp', device_id: 'plc_01', severity: 'warning', message: 'plc_high_temp: temperature=31.5', value: '31.5', created_at: Date.now() / 1000 - 600 },
+];
+
+export function AlertsPanel({ lang, isDemo = false }: { lang: Lang; isDemo?: boolean }) {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [filter, setFilter] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
-  const load = async () => { setLoading(true); setAlerts(await fetchAlerts(filter || undefined)); setLoading(false); };
-  useEffect(() => { load(); }, [filter]);
-  useEffect(() => { const i = setInterval(load, 5000); return () => clearInterval(i); }, [filter]);
+  const load = async () => {
+    if (isDemo) {
+      const filtered = filter ? MOCK_ALERTS.filter(a => a.severity === filter) : MOCK_ALERTS;
+      setAlerts(filtered);
+      return;
+    }
+    setLoading(true);
+    setAlerts(await fetchAlerts(filter || undefined));
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [filter, isDemo]);
+  useEffect(() => {
+    if (isDemo) return;
+    const i = setInterval(load, 5000);
+    return () => clearInterval(i);
+  }, [filter, isDemo]);
 
   return (
     <div>
@@ -29,9 +49,11 @@ export function AlertsPanel({ lang }: { lang: Lang }) {
             <option value="warning">{t('alerts.warning', lang)}</option>
             <option value="info">{t('alerts.info', lang)}</option>
           </select>
-          <button className="p-1.5 rounded-md transition" style={{ background: 'var(--bg-field)', border: '1px solid var(--border-light)', color: 'var(--text-secondary)' }} onClick={load}>
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          {!isDemo && (
+            <button className="p-1.5 rounded-md transition" style={{ background: 'var(--bg-field)', border: '1px solid var(--border-light)', color: 'var(--text-secondary)' }} onClick={load}>
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            </button>
+          )}
         </div>
       </div>
 
