@@ -148,7 +148,7 @@ rules:
     cooldown: 300
     actions:
       - type: telegram
-        message: "🔥 {device_name} temperature {value}°C"
+        message: "[ALERT]{device_name} temperature {value}°C"
 
   - name: pump_auto_control
     device: plc_01

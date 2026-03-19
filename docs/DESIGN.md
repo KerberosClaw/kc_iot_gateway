@@ -398,7 +398,7 @@ rules:
     cooldown: 300
     actions:
       - type: telegram
-        message: "🔥 {device_name} temperature {value}°C exceeds threshold"
+        message: "[ALERT]{device_name} temperature {value}°C exceeds threshold"
 
   - name: device_offline
     description: "設備離線偵測"
