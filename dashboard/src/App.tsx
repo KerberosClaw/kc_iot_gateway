@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Radio, Server, AlertTriangle, Shield, Webhook, Sun, Moon, Languages, Monitor } from 'lucide-react';
+import { Radio, Server, AlertTriangle, Shield, Webhook, Sun, Moon, Languages, Monitor, Github } from 'lucide-react';
+
+const SHOW_GITHUB_BADGE = import.meta.env.VITE_GITHUB_PAGES === 'true';
+const GITHUB_URL = 'https://github.com/KerberosClaw/kc_iot_gateway';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useDemoMode } from './hooks/useDemoMode';
 import { useTheme } from './hooks/useTheme';
@@ -132,6 +135,20 @@ function App() {
       {tab === 'alerts' && <AlertsPanel lang={lang} isDemo={isDemo} />}
       {tab === 'rules' && <RulesPanel lang={lang} isDemo={isDemo} />}
       {tab === 'webhook' && <WebhookSimPanel lang={lang} isDemo={isDemo} />}
+
+      {/* GitHub badge - only on GitHub Pages */}
+      {SHOW_GITHUB_BADGE && (
+        <a
+          href={GITHUB_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:scale-105 z-50"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}
+        >
+          <Github size={14} />
+          Fork me on GitHub
+        </a>
+      )}
     </div>
   );
 }
