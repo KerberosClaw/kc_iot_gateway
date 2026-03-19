@@ -21,8 +21,9 @@ def create_app(gateway) -> FastAPI:
     # --- Dashboard ---
 
     static_dir = Path(__file__).parent.parent / "static"
-    if static_dir.exists():
-        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    assets_dir = static_dir / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
     @app.get("/", response_class=HTMLResponse)
     async def dashboard():
