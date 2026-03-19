@@ -1,6 +1,6 @@
-# kc_iot_gateway — Design Document
+# kc_iot_gateway -- Design Document
 
-> **English summary:** A lightweight, plugin-based IoT gateway that unifies device communication across multiple protocols (MQTT, Modbus TCP, CoAP, Webhook) behind a single REST API and MCP interface. Features a YAML-driven rule engine for alerting (Telegram, Webhook) with cooldown and cross-device automation, a real-time web dashboard with built-in webhook simulator, device simulators for all protocols, an MCP Server for AI agent integration, and Docker Compose one-click deployment. Inspired by a production IoT platform that managed 28 device plugins across 6 protocols and 10+ brands.
+> **English summary:** A lightweight, plugin-based IoT gateway that unifies device communication across multiple protocols (MQTT, Modbus TCP, CoAP, Webhook) behind a single REST API and MCP interface. Features a YAML-driven rule engine for alerting (Telegram, Webhook) with cooldown and cross-device automation, a real-time web dashboard with built-in webhook simulator, device simulators for all protocols, an MCP Server for AI agent integration, and Docker Compose one-click deployment. Born from the battle scars of running a production IoT platform that managed 28 device plugins across 6 protocols and 10+ brands.
 
 ---
 
@@ -8,17 +8,17 @@
 
 ## 概觀
 
-一個輕量級、Plugin 架構的 IoT Gateway，將不同協議的設備統一在一個 REST API 和 MCP 介面後面。
+一個輕量級、Plugin 架構的 IoT Gateway，把一堆講不同語言的設備統一在一個 REST API 和 MCP 介面後面。讓上層應用不用關心底層到底是 MQTT 還是 Modbus，歲月靜好。
 
-核心理念來自實際生產環境經驗：管理 28 種設備插件、6 種協議、10+ 品牌的 IoT 平台。本專案是該架構的精華濃縮版 — 去掉企業複雜度，保留設計本質。
+核心理念來自實際生產環境的血淚經驗：管理 28 種設備插件、6 種協議、10+ 品牌的 IoT 平台。本專案是該架構的精華濃縮版 -- 去掉企業級的複雜度，保留設計本質。換句話說，把痛苦的部分學起來，但不帶回家。
 
 ### 解決什麼問題？
 
-客戶永遠在問：「下個月要加一個新品牌的感測器，你們能接嗎？」
+客戶永遠在問那句經典台詞：「下個月要加一個新品牌的感測器，你們能接嗎？」
 
-如果 gateway 是鐵板一塊，每加一個設備就要改核心、重新部署、祈禱不會影響其他設備。28 個設備插件，你不能這樣搞。
+如果 gateway 是鐵板一塊，每加一個設備就要改核心、重新部署、然後雙手合十祈禱不會影響其他設備。28 個設備插件，你真的不能這樣搞。問我怎麼知道的？別問。
 
-所以 gateway 的核心只做三件事：**收、轉、發**。設備怎麼溝通，全部封裝在 plugin 裡。新設備上線 = 丟一個 plugin 進去，核心不動。
+所以 gateway 的核心只做三件事：**收、轉、發**。設備怎麼溝通，全部封裝在 plugin 裡。新設備上線 = 丟一個 plugin 進去，核心不動。這不是什麼高深的設計模式，就是被需求逼出來的生存智慧。
 
 ---
 
@@ -70,13 +70,13 @@ graph TB
 
 ### 設計原則
 
-Plugin 介面越小，越好寫，生態越容易長。
+Plugin 介面越小，越好寫，生態越容易長。這個道理聽起來很簡單，但在會議室裡每次都要跟「那我們再多加一個 method 好了」奮戰半小時。
 
 設備有兩種通訊模式：
-- **Pull（拉）**— Gateway 主動讀取設備（Modbus polling、CoAP GET）
-- **Push（推）**— 設備主動送數據上來（MQTT subscribe、Webhook POST）
+- **Pull（拉）**-- Gateway 主動去敲設備的門要數據（Modbus polling、CoAP GET）
+- **Push（推）**-- 設備自己把數據丟上來（MQTT subscribe、Webhook POST）
 
-Plugin 介面同時支援兩種模式：
+Plugin 介面同時支援兩種模式。你的設備愛用哪種就用哪種，我們不挑：
 
 ```python
 class DevicePlugin(ABC):
@@ -137,11 +137,11 @@ Gateway 啟動
       → write()                     # 兩種都支援
 ```
 
-Push 進來的數據透過 callback 送入 Device Registry → Event Bus → Rule Engine，跟 Pull 讀取的後續流程完全一樣。
+Push 進來的數據透過 callback 送入 Device Registry, 然後走 Event Bus, 再到 Rule Engine -- 跟 Pull 讀取的後續流程完全一樣。兩條路進來，一條路出去。乾淨。
 
 ### Plugin 載入機制
 
-生產系統用 Java Reflection 掃描 classpath。本專案簡化為目錄掃描：
+生產系統用 Java Reflection 掃描 classpath（很企業級，也很痛苦）。本專案簡化為目錄掃描，因為 Python 可以這樣任性：
 
 ```
 src/plugins/
@@ -151,13 +151,13 @@ src/plugins/
 └── webhook_plugin.py    → WebhookPlugin
 ```
 
-Gateway 啟動時掃描 `plugins/` 目錄，每個模組匯出一個繼承 `DevicePlugin` 的 class，自動註冊。新增協議 = 新增一個 .py 檔，核心不動。
+Gateway 啟動時掃描 `plugins/` 目錄，每個模組匯出一個繼承 `DevicePlugin` 的 class，自動註冊。新增協議 = 新增一個 .py 檔，核心不動。就這樣。沒有 XML 配置地獄，沒有 classpath 除錯噩夢。
 
 ---
 
-## 設備描述檔 — devices.yaml
+## 設備描述檔 -- devices.yaml
 
-統一描述所有設備，不管什麼協議：
+統一描述所有設備，不管什麼協議。用 YAML 寫，因為生活已經夠苦了，不需要再用 XML：
 
 ```yaml
 plugins:
@@ -228,7 +228,7 @@ plugins:
 
 ### Webhook Plugin 的運作方式
 
-每家設備商的 payload 格式不同，所以 Webhook Plugin 用 YAML 定義解析規則：
+每家設備商的 payload 格式不同 -- 這大概是 IoT 界唯一不變的真理。所以 Webhook Plugin 用 YAML 定義解析規則，而不是為每家廠商寫一堆 if-else：
 
 ```
 設備 POST /webhook
@@ -239,13 +239,13 @@ plugins:
           → 進入標準上行流程
 ```
 
-不需要為每家設備商寫 code，只需要加一段 YAML。
+不需要為每家設備商寫 code，只需要加一段 YAML。你的週末因此得救。
 
 ---
 
 ## 統一 REST API
 
-不管底層是 MQTT、Modbus、CoAP 還是 Webhook，對外的 API 長一樣：
+不管底層是 MQTT、Modbus、CoAP 還是 Webhook，對外的 API 長一樣。這就是 gateway 存在的全部意義 -- 讓上層不用關心底層的混亂：
 
 ### 設備 API
 
@@ -299,13 +299,13 @@ PUT /api/rules/high_temperature
 → {"status": "ok", "rule": "high_temperature", "updated": true}
 ```
 
-上層的 AI Agent 或 Dashboard 不需要知道底層是 MQTT 還是 Modbus。透過 REST API 或 MCP，用語義化的方式操作設備即可。這就是 Protocol Adapter Pattern。
+上層的 AI Agent 或 Dashboard 不需要知道底層是 MQTT 還是 Modbus。透過 REST API 或 MCP，用語義化的方式操作設備即可。這就是 Protocol Adapter Pattern -- 聽起來很厲害，其實就是「多加一層」的花式說法。
 
 ---
 
 ## MCP Server
 
-Gateway 內建 MCP Server（基於 FastMCP），讓 AI Agent 直接用自然語言操作所有設備。
+Gateway 內建 MCP Server（基於 FastMCP），讓 AI Agent 直接用自然語言操作所有設備。是的，我們讓 AI 控制工廠設備了。我確定這不會有任何問題。
 
 ### MCP Tools
 
@@ -334,11 +334,11 @@ Agent → list_devices()
      → "所有設備都在線。factory_temp_01 (MQTT), plc_01 (Modbus), light_01 (CoAP)"
 ```
 
-MCP Server 底層呼叫的是 Gateway Core 的 Device Registry 和 Plugin，跟 REST API 共用同一套邏輯。
+MCP Server 底層呼叫的是 Gateway Core 的 Device Registry 和 Plugin，跟 REST API 共用同一套邏輯。不是另起爐灶，是同一個爐灶開兩個窗口。
 
 ### AI Agent Skill
 
-提供 AI Agent（OpenClaw 等）的 CLI wrapper script：
+提供 AI Agent（OpenClaw 等）的 CLI wrapper script，因為有時候打指令比寫 JSON 快：
 
 ```bash
 iot list                              # list_devices
@@ -353,7 +353,7 @@ iot rules                             # list_rules
 
 ## 資料流
 
-### 上行（設備 → 系統）
+### 上行（設備 → 系統）-- 數據怎麼進來的
 
 ```mermaid
 graph LR
@@ -370,7 +370,7 @@ graph LR
     Rules --> DB["SQLite 告警歷史"]
 ```
 
-### 下行（系統 → 設備）
+### 下行（系統 → 設備）-- 指令怎麼出去的
 
 ```mermaid
 graph LR
@@ -380,7 +380,7 @@ graph LR
     Device -.->|"回報新狀態（Closed-loop）"| Plugin2["DevicePlugin 上行流程"]
 ```
 
-Closed-loop：下行控制完，設備回報會自動觸發上行流程，確保系統中的數值是設備的真實狀態。
+Closed-loop：下行控制完，設備回報會自動觸發上行流程，確保系統中的數值是設備的真實狀態。不是你以為你設了 1500 RPM 就是 1500 RPM -- 要等設備親口說「對，我現在是 1500 RPM」才算數。這是在生產環境被教訓出來的。
 
 ---
 
@@ -388,8 +388,10 @@ Closed-loop：下行控制完，設備回報會自動觸發上行流程，確保
 
 ### 規則來源
 
-1. **啟動時** — 從 `rules.yaml` 載入預設規則，存入 SQLite
-2. **運行時** — 透過 REST API 或 Dashboard 新增/修改/刪除規則，即時生效，不需要重啟
+規則有兩種方式進來，因為工程師需要彈性，而 PM 需要安全感：
+
+1. **啟動時** -- 從 `rules.yaml` 載入預設規則，存入 SQLite。版本控制友善。
+2. **運行時** -- 透過 REST API 或 Dashboard 新增/修改/刪除規則，即時生效，不需要重啟。老闆站在你背後說「把閾值改成 45 度」的時候很好用。
 
 ### rules.yaml 範例
 
@@ -437,11 +439,11 @@ rules:
 
 ### 設計重點
 
-- **cooldown** — 生產環境最怕告警風暴，同一規則在 cooldown 時間內只觸發一次
-- **severity 分級** — critical / warning / info，不同通道可以只收特定等級
-- **device_write action** — 不只是通知，還能自動控制其他設備（跨設備聯動）
-- **萬用匹配** — `device: "*"` 可以套用到所有設備
-- **即時修改** — 透過 API 或 Dashboard 修改規則，不需重啟 gateway
+- **cooldown** -- 生產環境最怕告警風暴。同一規則在 cooldown 時間內只觸發一次。你的手機會感謝你。
+- **severity 分級** -- critical / warning / info。凌晨三點只收 critical，其他的明天早上再說。
+- **device_write action** -- 不只是通知你「溫度太高了」然後袖手旁觀，還能自動開泵降溫。有手有腳的告警系統。
+- **萬用匹配** -- `device: "*"` 套用到所有設備。偷懶的最高境界是寫成功能。
+- **即時修改** -- 透過 API 或 Dashboard 修改規則，不需重啟 gateway。因為重啟 = 那幾秒鐘你是瞎的。
 
 ### 告警通道
 
@@ -456,7 +458,7 @@ rules:
 
 ## Web Dashboard
 
-單頁 HTML + WebSocket，嵌在 FastAPI 裡，不需要任何前端框架。
+單頁 HTML + WebSocket，嵌在 FastAPI 裡，不需要任何前端框架。沒有 node_modules，沒有 webpack，沒有「你的 npm 版本不對」。就一個 HTML 檔，能跑就贏。
 
 ### 功能
 
@@ -469,8 +471,8 @@ rules:
 
 ### 技術方案
 
-- `static/index.html` — 純 HTML + CSS + vanilla JavaScript
-- WebSocket `/ws` — Gateway 推送即時設備數據和告警事件
+- `static/index.html` -- 純 HTML + CSS + vanilla JavaScript。是的，vanilla JS。它還活著，而且過得很好。
+- WebSocket `/ws` -- Gateway 推送即時設備數據和告警事件
 - Rules 區塊透過 REST API CRUD 規則
 
 ### 啟動方式
@@ -480,13 +482,13 @@ docker compose up -d
 open http://localhost:8000
 ```
 
-啟動後，Dashboard 即時顯示所有設備的數據變化和告警事件。
+啟動後，Dashboard 即時顯示所有設備的數據變化和告警事件。不用額外設定，不用另開 terminal，打開瀏覽器就能看。
 
 ---
 
 ## 設備模擬器
 
-內建四種設備模擬方式，`docker compose up` 後所有模擬器自動啟動：
+內建四種設備模擬方式，`docker compose up` 後所有模擬器自動啟動。因為沒有人手邊隨時有一台 PLC 可以測試（如果你有，我很羨慕）：
 
 | 模擬器 | 類型 | 行為 |
 |--------|------|------|
@@ -497,14 +499,14 @@ open http://localhost:8000
 
 ### Webhook Simulator
 
-整合在 Dashboard 的 Webhook Simulator 頁籤中，提供 Web UI 讓使用者模擬設備回報數據：
+整合在 Dashboard 的 Webhook Simulator 頁籤中，提供 Web UI 讓你假裝自己是一台設備：
 
 - 下拉選擇設備（env_sensor_01 / door_sensor_01）
 - 根據設備的 fields 定義自動產生對應的輸入欄位和 slider
 - 點擊 Send 後，從瀏覽器直接 POST 到 `/webhook` endpoint
 - Dashboard 即時顯示收到的數據和觸發的告警
 
-這樣不需要使用 curl 或外部工具，直接在瀏覽器中完成 Webhook 的完整測試流程。
+這樣不需要使用 curl 或外部工具，直接在瀏覽器中完成 Webhook 的完整測試流程。連 Postman 都不用開。
 
 ---
 
@@ -518,7 +520,7 @@ open http://localhost:8000
 | 告警歷史 | SQLite | 零設定、零依賴 |
 | cooldown 狀態 | in-memory dict | 單 process，不需要 Redis |
 
-生產環境換成 MySQL/PostgreSQL + Redis 只需要改 DAO adapter，架構層是抽象的。
+生產環境換成 MySQL/PostgreSQL + Redis 只需要改 DAO adapter，架構層是抽象的。但說真的，SQLite 能撐到的規模比大部分人想像的大得多。先別急著加 Redis，除非你真的需要。
 
 ---
 
@@ -632,7 +634,7 @@ open http://localhost:8000     # Dashboard + Webhook Simulator
 
 ---
 
-## 設計決策 Trade-off
+## 設計決策 Trade-off（又名「為什麼不用 X」）
 
 | 決策 | 選擇 | 捨棄 | 理由 |
 |------|------|------|------|
@@ -645,4 +647,3 @@ open http://localhost:8000     # Dashboard + Webhook Simulator
 | AI 整合 | MCP Server 內建 | 只提供 REST API | MCP 是 AI Agent 的主流整合方式 |
 
 ---
-

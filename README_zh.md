@@ -1,4 +1,4 @@
-# 「讀取工廠溫度」— IoT Gateway
+# 「讀取工廠溫度」-- IoT Gateway
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://python.org)
@@ -7,26 +7,28 @@
 
 [English](README.md) | [Live Demo](https://kerberosclaw.github.io/kc_iot_gateway/)
 
-Plugin 架構的 IoT Gateway，將 MQTT、Modbus TCP、CoAP、Webhook 設備統一在一個 REST API 後面。內建 YAML 驅動的規則引擎、即時 Web Dashboard、MCP Server（AI Agent 整合）、Docker Compose 一鍵部署。
+工廠裡有一堆感測器講 MQTT，PLC 只聽得懂 Modbus，幾台設備堅持用 CoAP，還有那個廠商說「你開個 webhook 給我 POST 就好」。恭喜你，你需要一個 gateway。這就是那個 gateway -- Plugin 架構的 IoT Gateway，把所有設備統一在一個 REST API 後面，讓你的上層應用不用管底層到底在講什麼火星文。
 
-設計理念來自實際生產環境：管理 28 種設備插件、6 種協議、10+ 品牌的 IoT 平台。
+內建 YAML 驅動的規則引擎（因為沒有人想為了改一個溫度閾值重新部署）、即時 Web Dashboard、MCP Server 讓 AI Agent 也能來湊熱鬧，還有 Docker Compose 一鍵部署給珍惜自己頭髮的工程師。
+
+這套架構的設計理念來自實際生產環境的慘痛教訓：管理 28 種設備插件、6 種協議、10+ 品牌的 IoT 平台。本專案是精華濃縮版 -- 同樣的架構，少一點噩夢。
 
 <img src="docs/images/dashboard.png" width="700" alt="KC IoT Gateway Dashboard">
 
 ---
 
-## 功能
+## 功能（也就是你不用自己寫的東西）
 
-- **多協議支援** — MQTT、Modbus TCP、CoAP、Webhook，統一 API 存取
-- **Plugin 架構** — 新增協議只要加一個 .py 檔，核心不動
-- **YAML 設備描述檔** — 統一定義設備、欄位、資料型別
-- **規則引擎** — YAML 定義告警規則，支援 cooldown、severity 分級、跨設備聯動
-- **多通道告警** — Telegram、Webhook、設備控制聯動
-- **即時 Dashboard** — WebSocket 驅動，即時顯示設備數據和告警
-- **Webhook 模擬器** — Dashboard 內建 Web UI，不需要外部工具
-- **MCP Server** — 讓 AI Agent 用自然語言操作設備
-- **AI Agent Skill** — OpenClaw 等 LLM agent 的 CLI wrapper
-- **Docker 一鍵啟動** — `docker compose up -d` 啟動所有服務和模擬器
+- **多協議支援** -- MQTT、Modbus TCP、CoAP、Webhook，統一 API 存取。你的前端工程師不需要知道 Modbus 是什麼。（他們真幸福。）
+- **Plugin 架構** -- 新增協議只要加一個 .py 檔，核心不動。真的不動。
+- **YAML 設備描述檔** -- 統一定義設備、欄位、資料型別，不用再寫一個 adapter class
+- **規則引擎** -- YAML 定義告警規則，支援 cooldown、severity 分級、跨設備聯動。因為凌晨三點的告警風暴很鍛鍊心志，但一次就夠了。
+- **多通道告警** -- Telegram、Webhook、設備控制聯動
+- **即時 Dashboard** -- WebSocket 驅動，即時顯示設備數據和告警。沒有 React，沒有 build step，就是能跑。
+- **Webhook 模擬器** -- Dashboard 內建 Web UI，不用開 curl 或 Postman
+- **MCP Server** -- 讓 AI Agent 用自然語言操作設備。未來已經來了，不管我們準備好沒有。
+- **AI Agent Skill** -- OpenClaw 等 LLM agent 的 CLI wrapper
+- **Docker 一鍵啟動** -- `docker compose up -d` 啟動所有服務和模擬器。去泡杯咖啡吧。
 
 ---
 
@@ -47,14 +49,14 @@ uv run python -m src
 # Dashboard: http://localhost:8000
 ```
 
-### Docker Compose
+### Docker Compose（懶人首選）
 
 ```bash
 docker compose up -d
 open http://localhost:8000
 ```
 
-啟動後包含：
+一鍵啟動整個馬戲團：
 - Mosquitto MQTT Broker（port 1883）
 - MQTT 感測器模擬器
 - Modbus PLC 模擬器（port 5020）
@@ -97,7 +99,7 @@ graph TB
 
 ## 設備描述檔（YAML）
 
-在 `devices.yaml` 定義設備：
+在 `devices.yaml` 告訴 gateway 你有什麼設備。不用寫 code -- 描述一下你手上有什麼、怎麼跟它說話就好：
 
 ```yaml
 plugins:
@@ -141,7 +143,7 @@ plugins:
 
 ## 告警規則（YAML）
 
-在 `rules.yaml` 定義告警規則：
+在 `rules.yaml` 定義你的「拜託出事的時候叫醒我」規則：
 
 ```yaml
 rules:
@@ -170,9 +172,9 @@ rules:
 ```
 
 規則支援：
-- **Cooldown** — 防止告警風暴
-- **跨設備聯動** — 感測器觸發 → 自動控制另一台設備
-- **即時修改** — 透過 REST API 修改規則，不需重啟
+- **Cooldown** -- 因為連續收到 47 條一模一樣的 Telegram 訊息不叫「監控」，叫「騷擾」
+- **跨設備聯動** -- 感測器偵測到溫度過高，幫浦自動開啟。不需要人介入，也不需要人在值班室睡著。
+- **即時修改** -- 透過 REST API 修改規則，不需重啟。在生產環境改閾值，不用經歷重新部署的冷汗。
 
 ---
 
@@ -195,7 +197,7 @@ rules:
 
 ## MCP Server
 
-AI Agent 透過 MCP 操作設備：
+AI Agent 透過 MCP 操作你的設備。它們沒有先問過你的意見，老實說我們也沒有：
 
 | Tool | 說明 |
 |------|------|
@@ -260,4 +262,3 @@ kc_iot_gateway/
 | `TELEGRAM_CHAT_ID` | | Telegram Chat ID（選填） |
 
 ---
-

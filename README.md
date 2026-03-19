@@ -1,4 +1,4 @@
-# "Read the factory temperature" — IoT Gateway
+# "Read the factory temperature" -- IoT Gateway
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://python.org)
@@ -7,26 +7,28 @@
 
 [正體中文](README_zh.md) | [Live Demo](https://kerberosclaw.github.io/kc_iot_gateway/)
 
-Plugin-based IoT gateway that unifies device communication across MQTT, Modbus TCP, CoAP, and Webhook behind a single REST API. Includes a YAML-driven rule engine for alerting, a real-time web dashboard, an MCP server for AI agent integration, and Docker Compose one-click deployment.
+So you've got a factory full of sensors speaking MQTT, PLCs that only understand Modbus, a few devices that insist on CoAP, and that one vendor who said "just POST us a webhook." Congratulations, you now need a gateway. This is that gateway -- a plugin-based IoT gateway that wrangles all of them behind a single REST API, so the rest of your stack doesn't have to care.
 
-Inspired by a production IoT platform managing 28 device plugins across 6 protocols and 10+ brands.
+It also comes with a YAML-driven rule engine (because nobody wants to redeploy just to change a temperature threshold), a real-time web dashboard, an MCP server so AI agents can join the fun, and Docker Compose one-click deployment for people who value their sanity.
+
+Born from the scar tissue of running a production IoT platform with 28 device plugins across 6 protocols and 10+ brands. This is the distilled version -- same architecture, fewer nightmares.
 
 <img src="docs/images/dashboard.png" width="700" alt="KC IoT Gateway Dashboard">
 
 ---
 
-## Features
+## What's In The Box
 
-- **Multi-protocol support** — MQTT, Modbus TCP, CoAP, Webhook — all through one API
-- **Plugin architecture** — add a new protocol by dropping a single .py file, no core changes
-- **YAML device profiles** — define devices, fields, and data types in one config file
-- **Rule engine** — YAML-defined alert rules with cooldown, severity levels, and cross-device automation
-- **Multi-channel alerts** — Telegram, Webhook, and device-to-device control
-- **Real-time dashboard** — WebSocket-powered web UI with live device data and alert history
-- **Webhook simulator** — built-in web UI to test webhook devices without external tools
-- **MCP server** — let AI agents read/write devices via natural language
-- **AI agent skill** — CLI wrapper for OpenClaw and other LLM agents
-- **Docker-ready** — `docker compose up -d` starts everything including simulators
+- **Multi-protocol support** -- MQTT, Modbus TCP, CoAP, Webhook -- all through one API. Your frontend dev doesn't need to know what Modbus is. (Lucky them.)
+- **Plugin architecture** -- add a new protocol by dropping a single .py file. Zero core changes. Seriously.
+- **YAML device profiles** -- define devices, fields, and data types in one config file instead of writing another adapter class
+- **Rule engine** -- YAML-defined alert rules with cooldown, severity levels, and cross-device automation. Because alert storms at 3 AM build character, but only once.
+- **Multi-channel alerts** -- Telegram, Webhook, and device-to-device control
+- **Real-time dashboard** -- WebSocket-powered web UI with live device data and alert history. No React, no build step, just works.
+- **Webhook simulator** -- built-in web UI to test webhook devices without reaching for curl or Postman
+- **MCP server** -- let AI agents read/write devices via natural language. The future is here, whether we're ready or not.
+- **AI agent skill** -- CLI wrapper for OpenClaw and other LLM agents
+- **Docker-ready** -- `docker compose up -d` starts everything including simulators. Go get coffee.
 
 ---
 
@@ -47,14 +49,14 @@ uv run python -m src
 # Dashboard: http://localhost:8000
 ```
 
-### Docker Compose
+### Docker Compose (The Easy Way)
 
 ```bash
 docker compose up -d
 open http://localhost:8000
 ```
 
-This starts:
+This spins up the whole circus:
 - Mosquitto MQTT broker (port 1883)
 - MQTT sensor simulator
 - Modbus PLC simulator (port 5020)
@@ -97,7 +99,7 @@ graph TB
 
 ## Device Profile (YAML)
 
-Define devices in `devices.yaml`:
+Tell the gateway about your devices in `devices.yaml`. No code required -- just describe what you've got and how to talk to it:
 
 ```yaml
 plugins:
@@ -141,7 +143,7 @@ plugins:
 
 ## Alert Rules (YAML)
 
-Define alert rules in `rules.yaml`:
+Define your "please wake me up when something is on fire" rules in `rules.yaml`:
 
 ```yaml
 rules:
@@ -170,9 +172,9 @@ rules:
 ```
 
 Rules support:
-- **Cooldown** — prevent alert storms
-- **Cross-device automation** — trigger device control from sensor readings
-- **Runtime modification** — update rules via REST API without restart
+- **Cooldown** -- because getting 47 identical Telegram messages in a row is not "monitoring," it's spam
+- **Cross-device automation** -- sensor reads hot, pump turns on. No human in the loop, no human asleep at the desk.
+- **Runtime modification** -- update rules via REST API without restart. Change thresholds in production without the cold sweat of redeployment.
 
 ---
 
@@ -195,7 +197,7 @@ Rules support:
 
 ## MCP Server
 
-AI agents can control all devices via MCP:
+AI agents can boss around all your devices via MCP. They didn't ask for permission and honestly neither did we:
 
 | Tool | Description |
 |------|-------------|
@@ -261,7 +263,7 @@ kc_iot_gateway/
 
 ---
 
-## TODO
+## TODO (A.K.A. "I'll Get To It")
 
 - [ ] AND/OR compound rule conditions
 - [ ] Plugin hot-reload without restart
