@@ -1,0 +1,38 @@
+[project]
+name = "kc-iot-gateway"
+version = "1.0.0"
+description = "Plugin-based IoT gateway with multi-protocol support, rule engine, MCP server, and real-time dashboard"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
+    "aiomqtt>=2.3",
+    "pymodbus>=3.7.0",
+    "aiocoap>=0.4",
+    "aiosqlite>=0.20",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.28",
+    "websockets>=14.0",
+    "fastmcp>=3.1.1",
+    "jsonpath-ng>=1.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.28",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

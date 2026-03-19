@@ -1,0 +1,44 @@
+#!/bin/bash
+# IoT Gateway CLI wrapper for AI agents
+# Usage: iot <command> [args...]
+
+GATEWAY_URL="${IOT_GATEWAY_URL:-http://localhost:8000}"
+
+case "$1" in
+  list)
+    curl -s "$GATEWAY_URL/api/devices" | python3 -m json.tool
+    ;;
+  status)
+    curl -s "$GATEWAY_URL/api/devices/$2/status" | python3 -m json.tool
+    ;;
+  read)
+    curl -s "$GATEWAY_URL/api/devices/$2/read" | python3 -m json.tool
+    ;;
+  write)
+    # iot write plc_01 motor_speed 1500
+    curl -s -X POST "$GATEWAY_URL/api/devices/$2/write" \
+      -H "Content-Type: application/json" \
+      -d "{\"$3\": $4}" | python3 -m json.tool
+    ;;
+  alerts)
+    if [ -n "$2" ]; then
+      curl -s "$GATEWAY_URL/api/alerts?severity=$2" | python3 -m json.tool
+    else
+      curl -s "$GATEWAY_URL/api/alerts" | python3 -m json.tool
+    fi
+    ;;
+  rules)
+    curl -s "$GATEWAY_URL/api/rules" | python3 -m json.tool
+    ;;
+  *)
+    echo "Usage: iot <list|status|read|write|alerts|rules> [args...]"
+    echo ""
+    echo "Commands:"
+    echo "  list                        List all devices"
+    echo "  status <device>             Check device status"
+    echo "  read <device> [field]       Read device data"
+    echo "  write <device> <field> <val> Write to device"
+    echo "  alerts [severity]           View alerts"
+    echo "  rules                       List rules"
+    ;;
+esac

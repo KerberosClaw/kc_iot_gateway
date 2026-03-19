@@ -1,0 +1,43 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  mqtt-simulator:
+    build: .
+    command: python simulators/mqtt_simulator.py
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+    depends_on:
+      - mosquitto
+
+  modbus-simulator:
+    build: .
+    command: python simulators/modbus_simulator.py
+    environment:
+      - SIMULATOR_HOST=0.0.0.0
+      - SIMULATOR_PORT=5020
+
+  gateway:
+    build: .
+    command: python -m src
+    ports:
+      - "8000:8000"
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - GATEWAY_HOST=0.0.0.0
+      - GATEWAY_PORT=8000
+    depends_on:
+      - mosquitto
+      - mqtt-simulator
+      - modbus-simulator
+    volumes:
+      - ./devices.docker.yaml:/app/devices.yaml
+      - ./rules.yaml:/app/rules.yaml
+    env_file:
+      - .env

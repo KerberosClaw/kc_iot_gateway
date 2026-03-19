@@ -1,0 +1,52 @@
+# kc_iot_gateway — 設備描述檔範例
+# 此檔案對應內建模擬器的配置，可直接用於測試
+
+plugins:
+  mqtt_sensor:
+    protocol: mqtt
+    broker: localhost:1883
+    devices:
+      - id: factory_temp_01
+        name: "廠區溫度感測器"
+        topic: factory/sensor/temp_01
+        data_format: json
+        fields:
+          temperature: { path: "$.temp", unit: "°C", type: float }
+          humidity: { path: "$.hum", unit: "%RH", type: float }
+
+  modbus_plc:
+    protocol: modbus
+    host: localhost
+    port: 5020
+    slave_id: 1
+    byte_order: big
+    devices:
+      - id: plc_01
+        name: "產線 PLC"
+        registers:
+          temperature: { address: 0, type: float32, unit: "°C", access: ro }
+          humidity: { address: 2, type: float32, unit: "%RH", access: ro }
+          motor_speed: { address: 4, type: uint16, unit: "RPM", access: rw }
+          pump_on: { address: 0, fc: 1, type: bool, access: rw }
+
+  webhook_devices:
+    protocol: webhook
+    listen_path: /webhook
+    devices:
+      - id: env_sensor_01
+        name: "環境感測器（廠商 A）"
+        identity:
+          field: "$.device_id"
+          value: "ENV-001"
+        fields:
+          temperature: { path: "$.data.temp", unit: "°C", type: float }
+          humidity: { path: "$.data.hum", unit: "%RH", type: float }
+          battery: { path: "$.data.bat", unit: "%", type: int }
+
+      - id: door_sensor_01
+        name: "門禁感測器（廠商 B）"
+        identity:
+          field: "$.sn"
+          value: "DOOR-2F-01"
+        fields:
+          status: { path: "$.event.type", type: string }

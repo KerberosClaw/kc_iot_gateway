@@ -1,0 +1,44 @@
+# kc_iot_gateway — 預設告警規則
+
+rules:
+  - name: high_temperature
+    description: "廠區溫度過高"
+    device: factory_temp_01
+    condition:
+      field: temperature
+      operator: ">"
+      threshold: 35
+    severity: critical
+    cooldown: 30
+    actions:
+      - type: console
+        message: "[CRITICAL] {device_name} temperature {value}°C exceeds threshold"
+
+  - name: plc_high_temp
+    description: "PLC 溫度過高"
+    device: plc_01
+    condition:
+      field: temperature
+      operator: ">"
+      threshold: 30
+    severity: warning
+    cooldown: 30
+    actions:
+      - type: console
+        message: "[WARNING] {device_name} temperature {value}°C"
+
+  - name: pump_auto_control
+    description: "溫度過高自動開泵"
+    device: plc_01
+    condition:
+      field: temperature
+      operator: ">"
+      threshold: 28
+    severity: info
+    cooldown: 60
+    actions:
+      - type: device_write
+        target_device: plc_01
+        params: { pump_on: true }
+      - type: console
+        message: "[AUTO] Pump activated for {device_name} (temp={value}°C)"
