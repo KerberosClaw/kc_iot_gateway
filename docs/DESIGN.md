@@ -646,7 +646,3 @@ open http://localhost:8000     # Dashboard + Webhook Simulator
 
 ---
 
-## TODO
-
-- [ ] 規則引擎支援 AND/OR 複合條件
-- [ ] Plugin 熱載入（不重啟 gateway 新增 plugin）
