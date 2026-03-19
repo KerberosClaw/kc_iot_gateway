@@ -62,28 +62,33 @@ open http://localhost:8000
 
 ## 架構
 
-```
-AI Agent（Claude / OpenClaw）
-  ↕ MCP Protocol
-MCP Server（FastMCP）
-  ↕
-REST API（FastAPI）+ WebSocket + Dashboard
-  ↕
-┌─────────────────────────┐
-│      Gateway Core       │
-│  Registry + Event Bus   │
-│  Rule Engine + Actions  │
-├─────────┬───────────────┤
-│ Plugins │   Actions     │
-│ ┌─────┐ │ ┌───────────┐ │
-│ │MQTT │ │ │Telegram   │ │
-│ │Modb.│ │ │Webhook    │ │
-│ │CoAP │ │ │Webhook    │ │
-│ │WebHk│ │ │DevWrite   │ │
-│ └─────┘ │ └───────────┘ │
-└─────────┴───────────────┘
-      ↕           ↕
-    設備        通知
+```mermaid
+graph TB
+    Agent["AI Agent<br/>(Claude / OpenClaw)"] <-->|MCP| MCP["MCP Server"]
+    MCP <--> Core
+    Client["Dashboard / curl"] <-->|"REST API + WS"| Core
+
+    subgraph Core["Gateway Core"]
+        direction LR
+        Registry["Device Registry"] --- EventBus["Event Bus"]
+        EventBus --- RuleEngine["Rule Engine"]
+    end
+
+    subgraph Plugins["設備插件"]
+        MQTT["MQTT"] --- Modbus["Modbus"]
+        Modbus --- CoAP["CoAP"]
+        CoAP --- Webhook["Webhook"]
+    end
+
+    subgraph Actions["告警動作"]
+        TG["Telegram"] --- WH["Webhook"]
+        WH --- DW["設備控制"]
+    end
+
+    Core <--> Plugins
+    RuleEngine --> Actions
+    Plugins <--> Devices["IoT 設備"]
+    Actions --> Notify["通知"]
 ```
 
 ---
@@ -256,7 +261,5 @@ kc_iot_gateway/
 
 ## TODO
 
-- [ ] Dashboard Phase 2：React + Tailwind + shadcn/ui + Recharts
-- [ ] 支援更多通知通道（Email、Discord）
 - [ ] 規則引擎支援 AND/OR 複合條件
 - [ ] Plugin 熱載入（不重啟 gateway）

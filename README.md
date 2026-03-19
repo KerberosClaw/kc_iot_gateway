@@ -62,28 +62,33 @@ This starts:
 
 ## Architecture
 
-```
-AI Agent (Claude / OpenClaw)
-  ↕ MCP Protocol
-MCP Server (FastMCP)
-  ↕
-REST API (FastAPI) + WebSocket + Dashboard
-  ↕
-┌─────────────────────────┐
-│      Gateway Core       │
-│  Registry + Event Bus   │
-│  Rule Engine + Actions  │
-├─────────┬───────────────┤
-│ Plugins │   Actions     │
-│ ┌─────┐ │ ┌───────────┐ │
-│ │MQTT │ │ │Telegram   │ │
-│ │Modb.│ │ │Webhook    │ │
-│ │CoAP │ │ │Webhook    │ │
-│ │WebHk│ │ │DevWrite   │ │
-│ └─────┘ │ └───────────┘ │
-└─────────┴───────────────┘
-      ↕           ↕
-   Devices    Notifications
+```mermaid
+graph TB
+    Agent["AI Agent<br/>(Claude / OpenClaw)"] <-->|MCP| MCP["MCP Server"]
+    MCP <--> Core
+    Client["Dashboard / curl"] <-->|"REST API + WS"| Core
+
+    subgraph Core["Gateway Core"]
+        direction LR
+        Registry["Device Registry"] --- EventBus["Event Bus"]
+        EventBus --- RuleEngine["Rule Engine"]
+    end
+
+    subgraph Plugins
+        MQTT["MQTT"] --- Modbus["Modbus"]
+        Modbus --- CoAP["CoAP"]
+        CoAP --- Webhook["Webhook"]
+    end
+
+    subgraph Actions
+        TG["Telegram"] --- WH["Webhook"]
+        WH --- DW["Device Write"]
+    end
+
+    Core <--> Plugins
+    RuleEngine --> Actions
+    Plugins <--> Devices["IoT Devices"]
+    Actions --> Notify["Notifications"]
 ```
 
 ---
@@ -256,7 +261,5 @@ kc_iot_gateway/
 
 ## TODO
 
-- [ ] Dashboard Phase 2: React + Tailwind + shadcn/ui + Recharts
-- [ ] More notification channels (Email, Discord)
 - [ ] AND/OR compound rule conditions
 - [ ] Plugin hot-reload without restart

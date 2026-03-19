@@ -24,38 +24,44 @@
 
 ## 架構
 
-```
-AI Agent（Claude / OpenClaw / etc.）
-  ↕ MCP Protocol
-┌──────────────────────────────────────────────────┐
-│  MCP Server（FastMCP）                            │
-│    list_devices / read_device / write_device      │
-│    list_rules / device_status                     │
-└──────────────────┬───────────────────────────────┘
-                   ↕
-外部系統（Dashboard / curl / 第三方）
-  ↕ 統一 REST API（FastAPI）+ WebSocket
-┌──────────────────────────────────────────────────┐
-│                  Gateway Core                    │
-│                                                  │
-│  ┌────────────┐  ┌─────────────┐  ┌──────────┐  │
-│  │  Device     │  │  Event Bus  │  │ Dashboard │  │
-│  │  Registry   │  │  (asyncio)  │  │ (HTML+WS) │  │
-│  └────────────┘  └─────────────┘  └──────────┘  │
-│         ↕               ↓                        │
-│    Plugin Loader    Rule Engine                   │
-│    (動態載入)      (rules.yaml + API)              │
-│         ↕               ↓                        │
-│  ┌──────┐┌──────┐┌──────┐┌───────┐  Action Disp │
-│  │ MQTT ││Modbus││ CoAP ││Webhook│  ┌──┐┌──┐┌─┐│
-│  │Plugin││Plugin││Plugin││Plugin │  │LN││TG││WH││
-│  └──┬───┘└──┬───┘└──┬───┘└──┬────┘  └──┘└──┘└─┘│
-│     │       │       │       │    ┌───────────┐  │
-│     │       │       │       │    │  SQLite    │  │
-│     │       │       │       │    │(規則+告警)  │  │
-└─────┼───────┼───────┼───────┼────┴───────────┘──┘
-      ↓       ↓       ↓       ↓
-   MQTT設備 Modbus PLC CoAP設備 Webhook設備
+```mermaid
+graph TB
+    Agent["AI Agent<br/>(Claude / OpenClaw)"] <-->|MCP Protocol| MCP["MCP Server<br/>(FastMCP)"]
+    MCP <--> Core
+    External["Dashboard / curl / Third-party"] <-->|"REST API + WebSocket"| Core
+
+    subgraph Core["Gateway Core"]
+        Registry["Device Registry"]
+        EventBus["Event Bus<br/>(asyncio)"]
+        Dashboard["Dashboard<br/>(React + WS)"]
+        PluginLoader["Plugin Loader"]
+        RuleEngine["Rule Engine<br/>(rules.yaml + API)"]
+        Actions["Action Dispatcher"]
+        DB["SQLite<br/>(Rules + Alerts)"]
+    end
+
+    subgraph Plugins["Device Plugins"]
+        MQTT["MQTT Plugin"]
+        Modbus["Modbus Plugin"]
+        CoAP["CoAP Plugin"]
+        Webhook["Webhook Plugin"]
+    end
+
+    subgraph Notify["Alert Actions"]
+        TG["Telegram"]
+        WH["Webhook"]
+        DW["Device Write"]
+    end
+
+    PluginLoader --> Plugins
+    EventBus --> RuleEngine --> Actions
+    Actions --> Notify
+    Registry <--> Plugins
+
+    MQTT <--> MQTT_DEV["MQTT Devices"]
+    Modbus <--> MODBUS_DEV["Modbus PLC"]
+    CoAP <--> COAP_DEV["CoAP Devices"]
+    Webhook <--> WEBHOOK_DEV["Webhook Devices"]
 ```
 
 ---
@@ -349,27 +355,29 @@ iot rules                             # list_rules
 
 ### 上行（設備 → 系統）
 
-```
-實體設備
-  → Push: MQTT subscribe / Webhook POST → start_listening callback
-  → Pull: Modbus poll / CoAP GET → read()
-    → DevicePlugin 解析 raw data
-      → 更新 Device Registry（in-memory 最新值）
-        → Event Bus 廣播 DeviceDataEvent
-          ├── Rule Engine 評估告警條件
-          │     └── 觸發 → Action Dispatcher → LINE / TG / Webhook / device_write
-          ├── WebSocket 推送到 Dashboard
-          └── SQLite 記錄告警歷史
+```mermaid
+graph LR
+    Device["實體設備"] -->|"Push: MQTT / Webhook"| Plugin["DevicePlugin"]
+    Device -->|"Pull: Modbus / CoAP"| Plugin
+    Plugin --> Registry["Device Registry"]
+    Registry --> EventBus["Event Bus"]
+    EventBus --> Rules["Rule Engine"]
+    EventBus --> WS["WebSocket → Dashboard"]
+    Rules --> Actions["Action Dispatcher"]
+    Actions --> TG["Telegram"]
+    Actions --> WH["Webhook"]
+    Actions --> DW["Device Write"]
+    Rules --> DB["SQLite 告警歷史"]
 ```
 
 ### 下行（系統 → 設備）
 
-```
-REST API / MCP Server 收到 write 請求
-  → Device Registry 查詢設備屬於哪個 plugin
-    → Plugin.write() 將指令翻譯成協議指令
-      → 設備執行
-        → 設備回報新狀態（重新進入上行流程）
+```mermaid
+graph LR
+    API["REST API / MCP Server"] --> Registry["Device Registry"]
+    Registry --> Plugin["Plugin.write()"]
+    Plugin --> Device["設備執行"]
+    Device -.->|"回報新狀態（Closed-loop）"| Plugin2["DevicePlugin 上行流程"]
 ```
 
 Closed-loop：下行控制完，設備回報會自動觸發上行流程，確保系統中的數值是設備的真實狀態。
@@ -640,11 +648,5 @@ open http://localhost:8000     # Dashboard + Webhook Simulator
 
 ## TODO
 
-- [ ] Dashboard Phase 2：React + Tailwind + shadcn/ui + Recharts，現代化 UI
-  - 即時數據圖表（時序曲線）
-  - 設備控制面板（slider、switch）
-  - 告警歷史視覺化
-  - 規則編輯器（表單式）
-- [ ] 支援更多通知通道（Email、Discord）
 - [ ] 規則引擎支援 AND/OR 複合條件
 - [ ] Plugin 熱載入（不重啟 gateway 新增 plugin）
