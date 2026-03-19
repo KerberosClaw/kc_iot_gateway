@@ -5,11 +5,13 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
 [![MCP](https://img.shields.io/badge/Protocol-MCP-purple.svg)](https://modelcontextprotocol.io)
 
-[正體中文](README_zh.md)
+[正體中文](README_zh.md) | [Live Demo](https://kerberosclaw.github.io/kc_iot_gateway/)
 
 Plugin-based IoT gateway that unifies device communication across MQTT, Modbus TCP, CoAP, and Webhook behind a single REST API. Includes a YAML-driven rule engine for alerting, a real-time web dashboard, an MCP server for AI agent integration, and Docker Compose one-click deployment.
 
 Inspired by a production IoT platform managing 28 device plugins across 6 protocols and 10+ brands.
+
+<img src="docs/images/dashboard.png" width="700" alt="KC IoT Gateway Dashboard">
 
 ---
 

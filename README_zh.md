@@ -5,11 +5,13 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
 [![MCP](https://img.shields.io/badge/Protocol-MCP-purple.svg)](https://modelcontextprotocol.io)
 
-[English](README.md)
+[English](README.md) | [Live Demo](https://kerberosclaw.github.io/kc_iot_gateway/)
 
 Plugin 架構的 IoT Gateway，將 MQTT、Modbus TCP、CoAP、Webhook 設備統一在一個 REST API 後面。內建 YAML 驅動的規則引擎、即時 Web Dashboard、MCP Server（AI Agent 整合）、Docker Compose 一鍵部署。
 
 設計理念來自實際生產環境：管理 28 種設備插件、6 種協議、10+ 品牌的 IoT 平台。
+
+<img src="docs/images/dashboard.png" width="700" alt="KC IoT Gateway Dashboard">
 
 ---
 
