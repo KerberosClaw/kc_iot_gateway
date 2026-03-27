@@ -32,6 +32,8 @@ Born from the scar tissue of running a production IoT platform with 28 device pl
 
 ---
 
+> **Security Notice:** This is a POC/development project designed for trusted LAN environments. The REST API, WebSocket, MQTT broker, and webhook endpoint do not implement authentication. Do not expose service ports to the public internet without additional security measures.
+
 ## Quick Start
 
 ### Local Development
