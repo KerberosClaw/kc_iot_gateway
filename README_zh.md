@@ -4,6 +4,7 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
 [![MCP](https://img.shields.io/badge/Protocol-MCP-purple.svg)](https://modelcontextprotocol.io)
+[![CI](https://github.com/KerberosClaw/kc_iot_gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/KerberosClaw/kc_iot_gateway/actions/workflows/ci.yml)
 
 [English](README.md) | [Live Demo](https://kerberosclaw.github.io/kc_iot_gateway/)
 
